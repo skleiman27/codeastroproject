@@ -1,11 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import astropy.units as u
 
 class LightCurveTheoretical(object):
 
     def __init__(self, ticksinper = 100, depth = 0, duration = 0, noise = .001, numper = 1):
         """
-        Light Curve with transit details for one period
+        Light Curve with transit details for one period, for theoretical transit details
 
         Args:
         ticksinper (int): number of timesteps in one period
@@ -35,12 +36,18 @@ class LightCurveTheoretical(object):
         self.numper = numper
     
     def new_transit(self):
+        """
+        Creates new transit with slight variation in depth, and new location 1 period from previous
+        """
         self.depth = np.random.normal(loc=self.depth, scale = 0.001, size = 1)
         self.location = self.location + self.ticksinper
         
     def plot_transit(self, phase_flag = False):
         """ 
         Subtracts transit from the flux and plots the resulting lightcurve
+        
+        kwargs:
+        phase_flag (False, Bool): Decides if graph is plotted phasefolded or not
         """
         lowerbound = int(self.location - self.duration/2)
         upperbound = int(self.location + self.duration/2)
@@ -66,7 +73,8 @@ class LightCurveTheoretical(object):
         self.plot(phase_flag=True)
 
     def plot(self, phase_flag = False):
-        
+        """
+        Plots the light curve including the transit, then updates the period counter"""
         if phase_flag == True:
             if self.overflow_flag == True:
                 if self.per == 0:
@@ -123,13 +131,16 @@ class LightCurveExoplanet(object):
 
     def __init__(self, planet, star, ticksinper = 100, noise = .001, numper = 1):
         """
-        Light Curve with transit details for one period
+        Light Curve with transit details for one period for exoplanet and star system details
 
         Args:
+        Inputs: 
+        planet (Exoplanet): exoplanet to have transit plotted
+        star (Star): star which exoplanet transits
+        depth (0 < float < 1.0): depth of simulated transit, calculated via d = {R_p^2}/{R_s^2}
+        duration (0 < float < 1.0): time length of simulated transit calculated via t/P = R_s/(2*pi*a)
         ticksinper (int): number of timesteps in one period
         length (integer): number of total timesteps
-        depth (0 < float < 1.0): depth of simulated transit
-        duration (0 < float < 1.0): time length of simulated transit
         noise (float): normalized noise of flux
         location (0 < float < 1.0): central location of transit
         flux (array of floats): normalized flux of light curve
@@ -235,3 +246,26 @@ class LightCurveExoplanet(object):
                 plt.title("Generated Light Curve")
                 plt.legend()
         self.per += 1
+class Exoplanet(object):
+    """
+    Simulated exoplanet
+    Args:
+    rad (float): radius of exoplanet in jupiter masses
+    a (float): semi-major axis of exoplanet in AU
+    """
+    def __init__(self, rad, a):
+        self.radius = rad * u.R_jup
+        self.a = a * u.au
+        #self.mass = mass * u.M_jup
+
+class Star(object):
+    """
+    Simulated Star
+    Args:
+    rad (float): radius of star in R_sun
+    """
+
+    def __init__(self, rad):
+        self.radius = rad * u.R_sun
+#        self.mass = mass * u.M_sun
+
