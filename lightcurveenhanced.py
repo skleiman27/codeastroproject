@@ -51,7 +51,7 @@ class LightCurveTheoretical(object):
             self.lb = upperbound
             self.flux[0:self.lb] -= self.depth
             self.flux[self.ub:self.length] -= self.depth
-            overflow_flag = True
+            self.overflow_flag = True
         elif upperbound > self.length:
             self.lb = int(upperbound - self.length)
             self.ub = int(lowerbound)
@@ -121,7 +121,7 @@ class LightCurveTheoretical(object):
 
 class LightCurveExoplanet(object):
 
-    def __init__(self, ticksinper = 100, planet, star, noise = .001, numper = 1):
+    def __init__(self, planet, star, ticksinper = 100, noise = .001, numper = 1):
         """
         Light Curve with transit details for one period
 
@@ -139,7 +139,7 @@ class LightCurveExoplanet(object):
         self.ticksinper = ticksinper
         self.length = self.ticksinper * numper
         self.depth = float(((planet.radius / star.radius).to(''))**2)
-        self.duration = float(star.radius/(planet.a * 2 * np.pi).to(''))
+        self.duration = float((star.radius/(planet.a * 2 * np.pi)).to('') * self.ticksinper)
         self.noise = noise
         self.location = np.random.randint(0,ticksinper)
         self.flux = np.ones(self.length) + np.random.normal(loc = 0, scale = self.noise, size = self.length)
@@ -163,7 +163,7 @@ class LightCurveExoplanet(object):
             self.lb = upperbound
             self.flux[0:self.lb] -= self.depth
             self.flux[self.ub:self.length] -= self.depth
-            overflow_flag = True
+            self.overflow_flag = True
         elif upperbound > self.length:
             self.lb = int(upperbound - self.length)
             self.ub = int(lowerbound)
@@ -175,7 +175,13 @@ class LightCurveExoplanet(object):
             self.lb = int(lowerbound) 
             self.flux[self.lb:self.ub] -= self.depth
             self.overflow_flag = False
-        self.plot(phase_flag=True)
+        if self.lb == 0:
+            self.lb = 1
+        if self.ub == self.length:
+            self.ub = self.ub - 1
+        print(self.lb,self.ub,self.location)
+        print(self.overflow_flag)
+        self.plot(phase_flag)
 
     def plot(self, phase_flag = False):
         
