@@ -3,22 +3,35 @@ import matplotlib.pyplot as plt
 import astropy.units as u
 
 class LightCurveTheoretical(object):
-
-    def __init__(self, ticksinper = 100, depth = 0, duration = 0, noise = .001, numper = 1):
-        """
+     
+    """
         Light Curve with transit details for one period, for theoretical transit details
 
         Args:
-        ticksinper (int): number of timesteps in one period
-        length (integer): number of total timesteps
-        depth (0 < float < 1.0): depth of simulated transit
-        duration (0 < float < 1.0): time length of simulated transit
-        noise (float): normalized noise of flux
-        location (0 < float < 1.0): central location of transit
-        flux (array of floats): normalized flux of light curve
-        numper (int): number of periods
+            ticksinper (integer, default: 100): Number of timesteps in a single period
+            depth (float, default: 0): Depth of transit to be simulated
+            duration (float, default: 0): fraction of one period for planet to be in transit
+            noise (float, default = 0.001): noise to be added to the flux
+            numper (int, default = 1): Number of periods to be simulated
+        
 
-        """
+        Attributes:
+            ticksinper (integer): Number of timesteps in one period
+            length (integer): Number of total timesteps
+            depth (float): Depth of simulated transit
+            duration (float): Time length of simulated transit
+            noise (float): Normalized noise to be added to flux
+            location (float): Central location of transit
+            flux (array): Normalized flux of light curve
+            numper (int): The number of periods to be simulated
+            per (int): current number of period being simulated
+            self.lb (int): Found lower bound for transit 
+            self.ub (int): Found upper bound for transit
+            overflow_flag (Bool): Whether or not transit goes over either end of lightcurve. if it does, loop to the other side.
+    """
+
+    def __init__(self, ticksinper = 100, depth = 0, duration = 0, noise = .001, numper = 1):
+
         self.ticksinper = ticksinper
         self.length = self.ticksinper * numper
         if depth == 0:
@@ -46,8 +59,9 @@ class LightCurveTheoretical(object):
         """ 
         Subtracts transit from the flux and plots the resulting lightcurve
         
-        kwargs:
-        phase_flag (False, Bool): Decides if graph is plotted phasefolded or not
+        Args:
+            phase_flag (Bool, default = False): Decides if graph plotted is phasefolded or not
+
         """
         lowerbound = int(self.location - self.duration/2)
         upperbound = int(self.location + self.duration/2)
@@ -70,11 +84,16 @@ class LightCurveTheoretical(object):
             self.lb = int(lowerbound) 
             self.flux[self.lb:self.ub] -= self.depth
             self.overflow_flag = False
-        self.plot(phase_flag=True)
+        self.plot(phase_flag)
 
     def plot(self, phase_flag = False):
         """
-        Plots the light curve including the transit, then updates the period counter"""
+        Plots the light curve including the transit, then updates the period counter
+
+        Args:
+            phase_flag (Bool, default = False): Decides if plot is phasefolded or not.
+
+        """
         if phase_flag == True:
             if self.overflow_flag == True:
                 if self.per == 0:
@@ -128,10 +147,37 @@ class LightCurveTheoretical(object):
 
 
 class LightCurveExoplanet(object):
+    """
+        Light Curve with transit details for one period, for theoretical transit details
+
+        Args:
+            ticksinper (integer, default: 100): Number of timesteps in a single period
+            planet (Exoplanet): Planet which to simulate transit of
+            star (Star): Star which planet will transit
+            noise (float, default = 0.001): noise to be added to the flux
+            numper (int, default = 1): Number of periods to be simulated
+        
+
+        Attributes:
+            ticksinper (integer): Number of timesteps in one period
+            length (integer): Number of total timesteps
+            depth (float): Depth of simulated transit
+            duration (float): Time length of simulated transit
+            noise (float): Normalized noise to be added to flux
+            location (float): Central location of transit
+            flux (array): Normalized flux of light curve
+            numper (int): The number of periods to be simulated
+            per (int): current number of period being simulated
+            self.lb (int): Found lower bound for transit 
+            self.ub (int): Found upper bound for transit
+            overflow_flag (Bool): Whether or not transit goes over either end of lightcurve. if it does, loop to the other side.
+
+    """
 
     def __init__(self, planet, star, ticksinper = 100, noise = .001, numper = 1):
         """
-        Light Curve with transit details for one period for exoplanet and star system details
+        Light Curve with transit details for one period for exoplanet and star system. Calculates transit parameters from system 
+        parameters.
 
         Args:
         Inputs: 
@@ -247,12 +293,21 @@ class LightCurveExoplanet(object):
                 plt.legend()
         self.per += 1
 class Exoplanet(object):
+
     """
     Simulated exoplanet
     Args:
-    rad (float): radius of exoplanet in jupiter masses
-    a (float): semi-major axis of exoplanet in AU
+        rad (float): radius of exoplanet in jupiter masses
+        a (float): semi-major axis of exoplanet in AU
+        rad_unit (string, default = R_J): unit of inputted radius
+        a_unit (string, default = AU): unit of inputted semi-major axis
+
+    Attributes:
+        radius (float): Planetary radius in units rad_unit
+        a (float): semi-major axis in units a_unit
+    
     """
+
     def __init__(self, rad, a, rad_unit = "R_J", a_unit = "AU"):
         
         if rad_unit == "R_J":
@@ -274,8 +329,12 @@ class Exoplanet(object):
 class Star(object):
     """
     Simulated Star
+    
     Args:
-    rad (float): radius of star in R_sun
+        rad (float): radius of star in R_sun
+
+    Attributes:
+        radius (float): radius of star in solar radii.
     """
 
     def __init__(self, rad):
