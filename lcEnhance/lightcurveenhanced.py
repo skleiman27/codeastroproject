@@ -253,9 +253,22 @@ class Exoplanet(object):
     rad (float): radius of exoplanet in jupiter masses
     a (float): semi-major axis of exoplanet in AU
     """
-    def __init__(self, rad, a):
-        self.radius = rad * u.R_jup
-        self.a = a * u.au
+    def __init__(self, rad, a, rad_unit = "R_J", a_unit = "AU"):
+        
+        if rad_unit == "R_J":
+            self.radius = rad * u.R_jup
+        elif rad_unit == "R_earth":
+            self.radius = rad * u.R_earth
+        elif rad_unit == "m":
+            self. radius == rad * u.m
+        else: 
+            raise("ValueError: rad_unit must be 'R_J', 'R_earth', or 'm'.")
+        if a_unit == "AU":
+            self.a = a * u.au
+        elif a_unit == "m":
+            self.a = a * u.m
+        else:
+            raise("ValueError: a_unit must be either 'AU' or 'm'.")
         #self.mass = mass * u.M_jup
 
 class Star(object):
