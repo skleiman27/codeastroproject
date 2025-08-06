@@ -8,11 +8,11 @@ class LightCurveTheoretical(object):
         Light Curve with transit details for one period, for theoretical transit details
 
         Args:
-            ticksinper (integer, default: 100): Number of timesteps in a single period
-            depth (float, default: 0): Depth of transit to be simulated
-            duration (float, default: 0): fraction of one period for planet to be in transit
-            noise (float, default = 0.001): noise to be added to the flux
-            numper (int, default = 1): Number of periods to be simulated
+            ticksinper (integer): Number of timesteps in a single period
+            depth (float): Depth of transit to be simulated
+            duration (float): fraction of one period for planet to be in transit
+            noise (float): noise to be added to the flux
+            numper (int): Number of periods to be simulated
         
 
         Attributes:
@@ -25,8 +25,8 @@ class LightCurveTheoretical(object):
             flux (array): Normalized flux of light curve
             numper (int): The number of periods to be simulated
             per (int): current number of period being simulated
-            self.lb (int): Found lower bound for transit 
-            self.ub (int): Found upper bound for transit
+            lb (int): Found lower bound for transit 
+            ub (int): Found upper bound for transit
             overflow_flag (Bool): Whether or not transit goes over either end of lightcurve. if it does, loop to the other side.
     """
 
@@ -151,11 +151,11 @@ class LightCurveExoplanet(object):
         Light Curve with transit details for one period, for theoretical transit details
 
         Args:
-            ticksinper (integer, default: 100): Number of timesteps in a single period
+            ticksinper (integer): Number of timesteps in a single period
             planet (Exoplanet): Planet which to simulate transit of
             star (Star): Star which planet will transit
-            noise (float, default = 0.001): noise to be added to the flux
-            numper (int, default = 1): Number of periods to be simulated
+            noise (float): noise to be added to the flux
+            numper (int): Number of periods to be simulated
         
 
         Attributes:
@@ -168,8 +168,8 @@ class LightCurveExoplanet(object):
             flux (array): Normalized flux of light curve
             numper (int): The number of periods to be simulated
             per (int): current number of period being simulated
-            self.lb (int): Found lower bound for transit 
-            self.ub (int): Found upper bound for transit
+            lb (int): Found lower bound for transit 
+            ub (int): Found upper bound for transit
             overflow_flag (Bool): Whether or not transit goes over either end of lightcurve. if it does, loop to the other side.
 
     """
