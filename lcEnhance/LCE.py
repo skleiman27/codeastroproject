@@ -25,9 +25,9 @@ class LightCurveTheoretical(object):
             fluxOG (array): Flux of the lightcurve to be stored in order to remake light curves
             per (integer): current number of period being simulated
             numper (integer): The total number of periods to be simulated
-            self.slopelength (integer): Duration of which to have sloped part of transit
-            self.name (string): Name of object to be passed to self.plot
-            self.flux (array): Flux to be plotted on the light curve. Is reset each time plot_transit is called to preserve depth
+            slopelength (integer): Duration of which to have sloped part of transit
+            name (string): Name of object to be passed to self.plot
+            flux (array): Flux to be plotted on the light curve. Is reset each time plot_transit is called to preserve depth
             lb (integer): Found lower bound for transit 
             ub (integer): Found upper bound for transit
             
@@ -154,9 +154,9 @@ class LightCurveExoplanet(object):
             fluxOG (array): Flux of the lightcurve to be stored in order to remake light curves
             per (integer): current number of period being simulated
             numper (integer): The total number of periods to be simulated
-            self.slopelength (integer): Duration of which to have sloped part of transit
-            self.name (string): Name of object to be passed to self.plot
-            self.flux (array): Flux to be plotted on the light curve. Is reset each time plot_transit is called to preserve depth
+            slopelength (integer): Duration of which to have sloped part of transit
+            name (string): Name of object to be passed to self.plot
+            flux (array): Flux to be plotted on the light curve. Is reset each time plot_transit is called to preserve depth
             lb (integer): Found lower bound for transit 
             ub (integer): Found upper bound for transit
 
