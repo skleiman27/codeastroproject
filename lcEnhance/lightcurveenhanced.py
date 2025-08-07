@@ -29,7 +29,7 @@ class LightCurveTheoretical(object):
             ub (int): Found upper bound for transit
     """
 
-    def __init__(self, ticksinper = 100, depth = 0, duration = 0, noise = .001, numper = 1):
+    def __init__(self, ticksinper = 100, depth = 0, duration = 0, noise = .001, numper = 1, name = ""):
 
         self.ticksinper = ticksinper
         self.length = self.ticksinper * numper
@@ -43,12 +43,13 @@ class LightCurveTheoretical(object):
             self.duration = duration * ticksinper
         self.noise = noise
         self.location = np.random.randint(0,ticksinper)
-        self.flux = np.ones(self.length) + np.random.normal(loc = 0, scale = self.noise, size = self.length)
+        self.fluxOG = np.ones(self.length) + np.random.normal(loc = 0, scale = self.noise, size = self.length) + 1
         self.per = 0
         self.numper = numper
         self.slopelength = int(self.duration/10)
+        self.name = name
         
-    def plot_transit(self, phase_flag = False):
+    def plot_transit(self, phase_flag = False, xlim = []):
         """ 
         Subtracts transit from the flux and plots the resulting lightcurve
         
@@ -59,6 +60,8 @@ class LightCurveTheoretical(object):
             array: Flux for plotted lightcurve
 
         """
+        self.flux = self.fluxOG - 1
+        self.per = 0
         while self.per < self.numper:
 
             lowerbound = int(self.ticksinper/2 * (1 + 2 *self.per) - self.duration/2)
@@ -78,11 +81,12 @@ class LightCurveTheoretical(object):
             self.depth = np.random.normal(loc=self.depth, scale = 0.0001, size = 1)[0]
         
         self.flux = np.roll(self.flux,self.location)
-        self.plot(phase_flag)
+
+        self.plot(phase_flag, xlim = xlim)
         self.timesteps = np.arange(self.ticksinper*self.per)/self.ticksinper
         return self.timesteps, self.flux
 
-    def plot(self, phase_flag = False):
+    def plot(self, phase_flag = False, xlim = [0,0]):
         """
         Plots the light curve including the transit, then updates the period counter
 
@@ -90,6 +94,7 @@ class LightCurveTheoretical(object):
             phase_flag (Bool, default = False): Decides if plot is phasefolded or not.
 
         """
+        plt.figure()
         transit_idxs = np.where(self.flux<.995)[0]
         if phase_flag == True:
             plt.scatter(np.arange(self.ticksinper*self.per)/self.ticksinper % 1, self.flux, color = 'deepskyblue', label = "Light Curve")
@@ -100,9 +105,10 @@ class LightCurveTheoretical(object):
             plt.scatter(transit_idxs/self.ticksinper, self.flux[transit_idxs], color = 'navy', label = "Transit")
             plt.xlabel("Period")
         plt.ylabel("Normalized Flux")
-        plt.title("Generated Light Curve")
+        if len(xlim) != 0:
+            plt.xlim(xlim[0],xlim[1])
+        plt.title("Generated Light Curve of " + f"{self.name}")
         plt.legend()
-        self.per += 1
 
 
 class LightCurveExoplanet(object):
@@ -133,7 +139,7 @@ class LightCurveExoplanet(object):
 
     """
 
-    def __init__(self, planet, star, ticksinper = 100, noise = .001, numper = 1):
+    def __init__(self, planet, star, ticksinper = 100, noise = .001, numper = 1, name = ""):
         """
         Light Curve with transit details for one period for exoplanet and star system. Calculates transit parameters from system 
         parameters.
@@ -158,11 +164,13 @@ class LightCurveExoplanet(object):
         self.duration = float((star.radius/(planet.a * 2 * np.pi)).to('') * self.ticksinper)
         self.noise = noise
         self.location = np.random.randint(0,ticksinper)
-        self.flux = np.ones(self.length) + np.random.normal(loc = 0, scale = self.noise, size = self.length)
+        self.fluxOG = np.ones(self.length) + np.random.normal(loc = 0, scale = self.noise, size = self.length)+1
         self.per = 0
+        self.slopelength = int(self.duration/10)
         self.numper = numper
+        self.name = name
     
-    def plot_transit(self, phase_flag = False):
+    def plot_transit(self, phase_flag = False, xlim = []):
         """ 
         Subtracts transit from the flux and plots the resulting lightcurve
         
@@ -173,6 +181,8 @@ class LightCurveExoplanet(object):
             array: Flux for plotted lightcurve
 
         """
+        self.per = 0
+        self.flux = self.fluxOG - 1
         while self.per < self.numper:
 
             lowerbound = int(self.ticksinper/2 * (1 + 2 *self.per) - self.duration/2)
@@ -192,11 +202,11 @@ class LightCurveExoplanet(object):
             self.depth = np.random.normal(loc=self.depth, scale = 0.0001, size = 1)[0]
         
         self.flux = np.roll(self.flux,self.location)
-        self.plot(phase_flag)
+        self.plot(phase_flag, xlim = xlim)
         self.timesteps = np.arange(self.ticksinper*self.per)/self.ticksinper
         return self.timesteps, self.flux
 
-    def plot(self, phase_flag = False):
+    def plot(self, phase_flag = False, xlim = []):
         """
         Plots the light curve including the transit, then updates the period counter
 
@@ -204,6 +214,7 @@ class LightCurveExoplanet(object):
             phase_flag (Bool, default = False): Decides if plot is phasefolded or not.
 
         """
+        plt.figure()
         transit_idxs = np.where(self.flux<.995)[0]
         if phase_flag == True:
             plt.scatter(np.arange(self.ticksinper*self.per)/self.ticksinper % 1, self.flux, color = 'deepskyblue', label = "Light Curve")
@@ -213,10 +224,13 @@ class LightCurveExoplanet(object):
             plt.scatter(np.arange(self.ticksinper*self.per)/self.ticksinper, self.flux, color = 'deepskyblue', label = "Light Curve")
             plt.scatter(transit_idxs/self.ticksinper, self.flux[transit_idxs], color = 'navy', label = "Transit")
             plt.xlabel("Period")
+        print(xlim)
+        if len(xlim) != 0:
+            plt.xlim(xlim[0],xlim[1])
         plt.ylabel("Normalized Flux")
-        plt.title("Generated Light Curve")
+        plt.title("Generated Light Curve of " + f"{self.name}")
         plt.legend()
-        self.per += 1
+
 
 class Exoplanet(object):
 
