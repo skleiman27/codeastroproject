@@ -27,7 +27,6 @@ class LightCurveTheoretical(object):
             per (int): current number of period being simulated
             lb (int): Found lower bound for transit 
             ub (int): Found upper bound for transit
-            overflow_flag (Bool): Whether or not transit goes over either end of lightcurve. if it does, loop to the other side.
     """
 
     def __init__(self, ticksinper = 100, depth = 0, duration = 0, noise = .001, numper = 1):
@@ -37,7 +36,7 @@ class LightCurveTheoretical(object):
         if depth == 0:
             self.depth = np.random.uniform(.01,.20)
         else:
-            self.depth = np.random.normal(loc = depth, scale = .03, size = 1)
+            self.depth = np.random.normal(loc = depth, scale = .01, size = 1)[0]
         if duration == 0:
             self.duration = np.random.randint(.02 * ticksinper, .15 * ticksinper)
         else:
@@ -47,13 +46,7 @@ class LightCurveTheoretical(object):
         self.flux = np.ones(self.length) + np.random.normal(loc = 0, scale = self.noise, size = self.length)
         self.per = 0
         self.numper = numper
-    
-    def new_transit(self):
-        """
-        Creates new transit with slight variation in depth, and new location 1 period from previous
-        """
-        self.depth = np.random.normal(loc=self.depth, scale = 0.001, size = 1)
-        self.location = self.location + self.ticksinper
+        self.slopelength = int(self.duration/10)
         
     def plot_transit(self, phase_flag = False):
         """ 
@@ -61,33 +54,33 @@ class LightCurveTheoretical(object):
         
         Args:
             phase_flag (Bool, default = False): Decides if graph plotted is phasefolded or not
+        Returns:
+            array: Timesteps to plot lightcurve
+            array: Flux for plotted lightcurve
 
         """
-        lowerbound = int(self.location - self.duration/2)
-        upperbound = int(self.location + self.duration/2)
-        #print("FIRST")
-        #print(lowerbound,upperbound,self.location)
-        if lowerbound < 0:
-            self.ub = self.length + lowerbound
-            self.lb = upperbound
-            self.flux[0:self.lb] -= self.depth
-            self.flux[self.ub:self.length] -= self.depth
-            self.overflow_flag = True
-        elif upperbound > self.length:
-            self.lb = int(upperbound - self.length)
-            self.ub = int(lowerbound)
-            self.flux[0:self.lb] -= self.depth
-            self.flux[self.ub:self.length] -= self.depth
-            self.overflow_flag = True
-        else:
+        while self.per < self.numper:
+
+            lowerbound = int(self.ticksinper/2 * (1 + 2 *self.per) - self.duration/2)
+            upperbound = int(self.ticksinper/2 * (1 + 2 *self.per) + self.duration/2)
+
             self.ub = int(upperbound)
             self.lb = int(lowerbound) 
-            self.flux[self.lb:self.ub] -= self.depth
-            self.overflow_flag = False
-        print(self.lb,self.ub,self.location)
-        print(self.overflow_flag)
 
+            self.flux[self.lb:self.ub] -= self.depth
+
+            for i in np.arange(self.lb - self.slopelength, self.lb):
+                self.flux[i] = 1 - (i - (self.lb - self.slopelength))/(self.slopelength) * (self.depth)
+            for i in np.arange(self.ub, self.slopelength + self.ub):
+                self.flux[i] = 1 + (i - (self.ub + self.slopelength))/(self.slopelength) * (self.depth)
+
+            self.per += 1
+            self.depth = np.random.normal(loc=self.depth, scale = 0.0001, size = 1)[0]
+        
+        self.flux = np.roll(self.flux,self.location)
         self.plot(phase_flag)
+        self.timesteps = np.arange(self.ticksinper*self.per)/self.ticksinper
+        return self.timesteps, self.flux
 
     def plot(self, phase_flag = False):
         """
@@ -97,56 +90,18 @@ class LightCurveTheoretical(object):
             phase_flag (Bool, default = False): Decides if plot is phasefolded or not.
 
         """
+        transit_idxs = np.where(self.flux<.995)[0]
         if phase_flag == True:
-            if self.overflow_flag == True:
-                if self.per == 0:
-                    plt.scatter(np.arange(self.ticksinper*self.per+self.lb, self.ticksinper * (1 + self.per))/self.ticksinper % 1, self.flux[self.ticksinper*self.per+self.lb:self.ticksinper * (1 + self.per)], label = "Lightcurve", color = "deepskyblue")
-                    print(np.arange(self.ticksinper*self.per+self.lb, self.ticksinper * (1 + self.per))/self.ticksinper % 1)
-                    plt.scatter(np.arange(0,self.lb)/self.ticksinper % 1, self.flux[0:self.lb], label = "Transit", color = "navy", zorder = 3)
-                else:
-                    plt.scatter(np.arange(self.ticksinper*self.per+self.lb, self.ticksinper * (1 + self.per))/self.ticksinper % 1, self.flux[self.ticksinper*self.per+self.lb:self.ticksinper * (1 + self.per)], label = "Lightcurve", color = "deepskyblue")
-                    plt.scatter(np.arange(0,self.lb)/self.ticksinper,self.flux[0:self.lb] % 1, color = "navy", zorder = 3)
-                plt.scatter(np.arange(self.ub,self.length)/self.ticksinper % 1, self.flux[self.ub:self.length], color = "navy", zorder = 3)
-                plt.xlabel("Period")
-                plt.ylabel("Normalized Flux")
-                plt.title("Generated Light Curve")
-                plt.legend()            
-            else:
-                if self.per == 0:
-                    plt.scatter(np.arange(self.ticksinper*self.per, self.ticksinper * (1 + self.per))/self.ticksinper % 1, self.flux[self.ticksinper*self.per:self.ticksinper * (1 + self.per)], label = "Lightcurve", color = "deepskyblue")
-                    plt.scatter(np.arange(self.lb,self.ub)/self.ticksinper % 1, self.flux[self.lb:self.ub], label = "Transit", color = "navy", zorder = 3)
-                else:
-                    plt.scatter(np.arange(self.ticksinper*self.per, self.ticksinper * (1 + self.per))/self.ticksinper % 1, self.flux[self.ticksinper*self.per:self.ticksinper * (1 + self.per)], color = "deepskyblue")
-                    plt.scatter(np.arange(self.lb,self.ub)/self.ticksinper % 1, self.flux[self.lb:self.ub], color = "navy", zorder = 3)
-                plt.xlabel("Period")
-                plt.ylabel("Normalized Flux")
-                plt.title("Generated Light Curve")
-                plt.legend()
+            plt.scatter(np.arange(self.ticksinper*self.per)/self.ticksinper % 1, self.flux, color = 'deepskyblue', label = "Light Curve")
+            plt.scatter(transit_idxs/self.ticksinper % 1, self.flux[transit_idxs], color = 'navy', label = "Transit")
+            plt.xlabel("Phase")
         else:
-
-            if self.overflow_flag == True:
-                if self.per == 0:
-                    plt.scatter(np.arange(self.ticksinper*self.per+self.lb+1, self.ticksinper * (1 + self.per))/self.ticksinper, self.flux[self.ticksinper*self.per+self.lb+1:self.ticksinper * (1 + self.per)], label = "Lightcurve", color = "deepskyblue")
-                    plt.scatter(np.arange(0,self.lb+1)/self.ticksinper,self.flux[0:self.lb+1], label = "Transit", color = "navy", zorder = 3)
-                else:
-                    plt.scatter(np.arange(self.ticksinper*self.per+self.lb+1, self.ticksinper * (1 + self.per))/self.ticksinper, self.flux[self.ticksinper*self.per+self.lb+1:self.ticksinper * (1 + self.per)], color = "deepskyblue")
-                    plt.scatter(np.arange(0,self.lb+1)/self.ticksinper,self.flux[0:self.lb+1], color = "navy", zorder = 3)                    
-                plt.scatter(np.arange(self.ub-1,self.length)/self.ticksinper, self.flux[self.ub-1:self.length], color = "navy", zorder = 3)
-                plt.xlabel("Period")
-                plt.ylabel("Normalized Flux")
-                plt.title("Generated Light Curve")
-                plt.legend()            
-            else:
-                if self.per == 0:
-                    plt.scatter(np.arange(self.ticksinper*self.per, self.ticksinper * (1 + self.per))/self.ticksinper, self.flux[self.ticksinper*self.per:self.ticksinper * (1 + self.per)], label = "Lightcurve", color = "deepskyblue")
-                    plt.scatter(np.arange(self.lb-1,self.ub+1)/self.ticksinper,self.flux[self.lb-1:self.ub+1], label = "Transit", color = "navy", zorder = 3)
-                else:
-                    plt.scatter(np.arange(self.ticksinper*self.per, self.ticksinper * (1 + self.per))/self.ticksinper, self.flux[self.ticksinper*self.per:self.ticksinper * (1 + self.per)], color = "deepskyblue")
-                    plt.scatter(np.arange(self.lb-1,self.ub+1)/self.ticksinper,self.flux[self.lb-1:self.ub+1], color = "navy", zorder = 3)
-                plt.xlabel("Period")
-                plt.ylabel("Normalized Flux")
-                plt.title("Generated Light Curve")
-                plt.legend()
+            plt.scatter(np.arange(self.ticksinper*self.per)/self.ticksinper, self.flux, color = 'deepskyblue', label = "Light Curve")
+            plt.scatter(transit_idxs/self.ticksinper, self.flux[transit_idxs], color = 'navy', label = "Transit")
+            plt.xlabel("Period")
+        plt.ylabel("Normalized Flux")
+        plt.title("Generated Light Curve")
+        plt.legend()
         self.per += 1
 
 
@@ -207,95 +162,62 @@ class LightCurveExoplanet(object):
         self.per = 0
         self.numper = numper
     
-    def new_transit(self):
-        self.depth = np.random.normal(loc=self.depth, scale = 0.001, size = 1)
-        self.location = self.location + self.ticksinper
-        
     def plot_transit(self, phase_flag = False):
         """ 
         Subtracts transit from the flux and plots the resulting lightcurve
+        
+        Args:
+            phase_flag (Bool, default = False): Decides if graph plotted is phasefolded or not
+        Returns:
+            array: Timesteps to plot lightcurve
+            array: Flux for plotted lightcurve
+
         """
-        lowerbound = int(self.location - self.duration/2)
-        upperbound = int(self.location + self.duration/2)
-        #print("FIRST")
-        #print(lowerbound,upperbound,self.location)
-        if lowerbound < 0:
-            self.ub = self.length + lowerbound
-            self.lb = upperbound
-            self.flux[0:self.lb] -= self.depth
-            self.flux[self.ub:self.length] -= self.depth
-            self.overflow_flag = True
-        elif upperbound > self.length:
-            self.lb = int(upperbound - self.length)
-            self.ub = int(lowerbound)
-            self.flux[0:self.lb] -= self.depth
-            self.flux[self.ub:self.length] -= self.depth
-            self.overflow_flag = True
-        else:
+        while self.per < self.numper:
+
+            lowerbound = int(self.ticksinper/2 * (1 + 2 *self.per) - self.duration/2)
+            upperbound = int(self.ticksinper/2 * (1 + 2 *self.per) + self.duration/2)
+
             self.ub = int(upperbound)
             self.lb = int(lowerbound) 
+
             self.flux[self.lb:self.ub] -= self.depth
-            self.overflow_flag = False
-        if self.lb == 0:
-            self.lb = 1
-        if self.ub == self.length:
-            self.ub = self.ub - 1
-        print(self.lb,self.ub,self.location)
-        print(self.overflow_flag)
+
+            for i in np.arange(self.lb - self.slopelength, self.lb):
+                self.flux[i] = 1 - (i - (self.lb - self.slopelength))/(self.slopelength) * (self.depth)
+            for i in np.arange(self.ub, self.slopelength + self.ub):
+                self.flux[i] = 1 + (i - (self.ub + self.slopelength))/(self.slopelength) * (self.depth)
+
+            self.per += 1
+            self.depth = np.random.normal(loc=self.depth, scale = 0.0001, size = 1)[0]
+        
+        self.flux = np.roll(self.flux,self.location)
         self.plot(phase_flag)
+        self.timesteps = np.arange(self.ticksinper*self.per)/self.ticksinper
+        return self.timesteps, self.flux
 
     def plot(self, phase_flag = False):
-        
-        if phase_flag == True:
-            if self.overflow_flag == True:
-                if self.per == 0:
-                    plt.scatter(np.arange(self.ticksinper*self.per+self.lb+1, self.ticksinper * (1 + self.per))/self.ticksinper % 1, self.flux[self.ticksinper*self.per+self.lb+1:self.ticksinper * (1 + self.per)], label = "Lightcurve", color = "deepskyblue")
-                    plt.scatter(np.arange(0,self.lb+1)/self.ticksinper,self.flux[0:self.lb+1] % 1, label = "Transit", color = "navy", zorder = 3)
-                else:
-                    plt.scatter(np.arange(self.ticksinper*self.per+self.lb+1, self.ticksinper * (1 + self.per))/self.ticksinper % 1, self.flux[self.ticksinper*self.per+self.lb+1:self.ticksinper * (1 + self.per)], label = "Lightcurve", color = "deepskyblue")
-                    plt.scatter(np.arange(0,self.lb+1)/self.ticksinper % 1, self.flux[0:self.lb+1], color = "navy", zorder = 3)
-                plt.scatter(np.arange(self.ub-1,self.length)/self.ticksinper % 1, self.flux[self.ub-1:self.length], color = "navy", zorder = 3)
-                plt.xlabel("Period")
-                plt.ylabel("Normalized Flux")
-                plt.title("Generated Light Curve")
-                plt.legend()            
-            else:
-                if self.per == 0:
-                    plt.scatter(np.arange(self.ticksinper*self.per, self.ticksinper * (1 + self.per))/self.ticksinper % 1, self.flux[self.ticksinper*self.per:self.ticksinper * (1 + self.per)], label = "Lightcurve", color = "deepskyblue")
-                    plt.scatter(np.arange(self.lb-1,self.ub+1)/self.ticksinper % 1,self.flux[self.lb-1:self.ub+1], label = "Transit", color = "navy", zorder = 3)
-                else:
-                    plt.scatter(np.arange(self.ticksinper*self.per, self.ticksinper * (1 + self.per))/self.ticksinper % 1, self.flux[self.ticksinper*self.per:self.ticksinper * (1 + self.per)], color = "deepskyblue")
-                    plt.scatter(np.arange(self.lb-1,self.ub+1)/self.ticksinper % 1,self.flux[self.lb-1:self.ub+1], color = "navy", zorder = 3)
-                plt.xlabel("Period")
-                plt.ylabel("Normalized Flux")
-                plt.title("Generated Light Curve")
-                plt.legend()
-        else:
+        """
+        Plots the light curve including the transit, then updates the period counter
 
-            if self.overflow_flag == True:
-                if self.per == 0:
-                    plt.scatter(np.arange(self.ticksinper*self.per+self.lb+1, self.ticksinper * (1 + self.per))/self.ticksinper, self.flux[self.ticksinper*self.per+self.lb+1:self.ticksinper * (1 + self.per)], label = "Lightcurve", color = "deepskyblue")
-                    plt.scatter(np.arange(0,self.lb+1)/self.ticksinper,self.flux[0:self.lb+1], label = "Transit", color = "navy", zorder = 3)
-                else:
-                    plt.scatter(np.arange(self.ticksinper*self.per+self.lb+1, self.ticksinper * (1 + self.per))/self.ticksinper, self.flux[self.ticksinper*self.per+self.lb+1:self.ticksinper * (1 + self.per)], color = "deepskyblue")
-                    plt.scatter(np.arange(0,self.lb+1)/self.ticksinper,self.flux[0:self.lb+1], color = "navy", zorder = 3)                    
-                plt.scatter(np.arange(self.ub-1,self.length)/self.ticksinper, self.flux[self.ub-1:self.length], color = "navy", zorder = 3)
-                plt.xlabel("Period")
-                plt.ylabel("Normalized Flux")
-                plt.title("Generated Light Curve")
-                plt.legend()            
-            else:
-                if self.per == 0:
-                    plt.scatter(np.arange(self.ticksinper*self.per, self.ticksinper * (1 + self.per))/self.ticksinper, self.flux[self.ticksinper*self.per:self.ticksinper * (1 + self.per)], label = "Lightcurve", color = "deepskyblue")
-                    plt.scatter(np.arange(self.lb-1,self.ub+1)/self.ticksinper,self.flux[self.lb-1:self.ub+1], label = "Transit", color = "navy", zorder = 3)
-                else:
-                    plt.scatter(np.arange(self.ticksinper*self.per, self.ticksinper * (1 + self.per))/self.ticksinper, self.flux[self.ticksinper*self.per:self.ticksinper * (1 + self.per)], color = "deepskyblue")
-                    plt.scatter(np.arange(self.lb-1,self.ub+1)/self.ticksinper,self.flux[self.lb-1:self.ub+1], color = "navy", zorder = 3)
-                plt.xlabel("Period")
-                plt.ylabel("Normalized Flux")
-                plt.title("Generated Light Curve")
-                plt.legend()
+        Args:
+            phase_flag (Bool, default = False): Decides if plot is phasefolded or not.
+
+        """
+        transit_idxs = np.where(self.flux<.995)[0]
+        if phase_flag == True:
+            plt.scatter(np.arange(self.ticksinper*self.per)/self.ticksinper % 1, self.flux, color = 'deepskyblue', label = "Light Curve")
+            plt.scatter(transit_idxs/self.ticksinper % 1, self.flux[transit_idxs], color = 'navy', label = "Transit")
+            plt.xlabel("Phase")
+        else:
+            plt.scatter(np.arange(self.ticksinper*self.per)/self.ticksinper, self.flux, color = 'deepskyblue', label = "Light Curve")
+            plt.scatter(transit_idxs/self.ticksinper, self.flux[transit_idxs], color = 'navy', label = "Transit")
+            plt.xlabel("Period")
+        plt.ylabel("Normalized Flux")
+        plt.title("Generated Light Curve")
+        plt.legend()
         self.per += 1
+
 class Exoplanet(object):
 
     """
