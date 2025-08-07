@@ -10,9 +10,10 @@ class LightCurveTheoretical(object):
         Args:
             ticksinper (integer): Number of timesteps in a single period
             depth (float): Depth of transit to be simulated
-            duration (float): fraction of one period for planet to be in transit
-            noise (float): noise to be added to the flux
-            numper (int): Number of periods to be simulated
+            duration (float): Fraction of one period for planet to be in transit
+            noise (float): Noise to be added to the flux
+            numper (integer): Number of periods to be simulated
+            name (string): Name of the object, sent to self.plot
         
 
         Attributes:
@@ -22,11 +23,15 @@ class LightCurveTheoretical(object):
             duration (float): Time length of simulated transit
             noise (float): Normalized noise to be added to flux
             location (float): Central location of transit
-            flux (array): Normalized flux of light curve
-            numper (int): The number of periods to be simulated
-            per (int): current number of period being simulated
-            lb (int): Found lower bound for transit 
-            ub (int): Found upper bound for transit
+            fluxOG (array): Flux of the lightcurve to be stored in order to remake light curves
+            per (integer): current number of period being simulated
+            numper (integer): The total number of periods to be simulated
+            self.slopelength (integer): Duration of which to have sloped part of transit
+            self.name (string): Name of object to be passed to self.plot
+            self.flux (array): Flux to be plotted on the light curve. Is reset each time plot_transit is called to preserve depth
+            lb (integer): Found lower bound for transit 
+            ub (integer): Found upper bound for transit
+            
     """
 
     def __init__(self, ticksinper = 100, depth = 0, duration = 0, noise = .001, numper = 1, name = ""):
@@ -36,7 +41,7 @@ class LightCurveTheoretical(object):
         if depth == 0:
             self.depth = np.random.uniform(.01,.20)
         else:
-            self.depth = np.random.normal(loc = depth, scale = .01, size = 1)[0]
+            self.depth = depth
         if duration == 0:
             self.duration = np.random.randint(.02 * ticksinper, .15 * ticksinper)
         else:
@@ -55,6 +60,7 @@ class LightCurveTheoretical(object):
         
         Args:
             phase_flag (Bool, default = False): Decides if graph plotted is phasefolded or not
+            xlim (array): Limits for the x axis sent to the self.plot
         Returns:
             array: Timesteps to plot lightcurve
             array: Flux for plotted lightcurve
@@ -92,6 +98,8 @@ class LightCurveTheoretical(object):
 
         Args:
             phase_flag (Bool, default = False): Decides if plot is phasefolded or not.
+            xlim (array): Limits for the x axis sent to the self.plot
+
 
         """
         plt.figure()
@@ -119,8 +127,9 @@ class LightCurveExoplanet(object):
             ticksinper (integer): Number of timesteps in a single period
             planet (Exoplanet): Planet which to simulate transit of
             star (Star): Star which planet will transit
-            noise (float): noise to be added to the flux
-            numper (int): Number of periods to be simulated
+            noise (float): Noise to be added to the flux
+            numper (integer): Number of periods to be simulated
+            name (string): Name of system to be passed to self.plot
         
 
         Attributes:
@@ -130,12 +139,14 @@ class LightCurveExoplanet(object):
             duration (float): Time length of simulated transit
             noise (float): Normalized noise to be added to flux
             location (float): Central location of transit
-            flux (array): Normalized flux of light curve
-            numper (int): The number of periods to be simulated
-            per (int): current number of period being simulated
-            lb (int): Found lower bound for transit 
-            ub (int): Found upper bound for transit
-            overflow_flag (Bool): Whether or not transit goes over either end of lightcurve. if it does, loop to the other side.
+            fluxOG (array): Flux of the lightcurve to be stored in order to remake light curves
+            per (integer): current number of period being simulated
+            numper (integer): The total number of periods to be simulated
+            self.slopelength (integer): Duration of which to have sloped part of transit
+            self.name (string): Name of object to be passed to self.plot
+            self.flux (array): Flux to be plotted on the light curve. Is reset each time plot_transit is called to preserve depth
+            lb (integer): Found lower bound for transit 
+            ub (integer): Found upper bound for transit
 
     """
 
@@ -155,7 +166,7 @@ class LightCurveExoplanet(object):
         noise (float): normalized noise of flux
         location (0 < float < 1.0): central location of transit
         flux (array of floats): normalized flux of light curve
-        numper (int): number of periods
+        numper (integer): number of periods
 
         """
         self.ticksinper = ticksinper
@@ -214,7 +225,7 @@ class LightCurveExoplanet(object):
             phase_flag (Bool, default = False): Decides if plot is phasefolded or not.
 
         """
-        plt.figure()
+        _ = plt.figure()
         transit_idxs = np.where(self.flux<.995)[0]
         if phase_flag == True:
             plt.scatter(np.arange(self.ticksinper*self.per)/self.ticksinper % 1, self.flux, color = 'deepskyblue', label = "Light Curve")
@@ -224,7 +235,6 @@ class LightCurveExoplanet(object):
             plt.scatter(np.arange(self.ticksinper*self.per)/self.ticksinper, self.flux, color = 'deepskyblue', label = "Light Curve")
             plt.scatter(transit_idxs/self.ticksinper, self.flux[transit_idxs], color = 'navy', label = "Transit")
             plt.xlabel("Period")
-        print(xlim)
         if len(xlim) != 0:
             plt.xlim(xlim[0],xlim[1])
         plt.ylabel("Normalized Flux")
@@ -257,13 +267,13 @@ class Exoplanet(object):
         elif rad_unit == "m":
             self. radius == rad * u.m
         else: 
-            raise("ValueError: rad_unit must be 'R_J', 'R_earth', or 'm'.")
+            raise Exception("ValueError: rad_unit must be 'R_J', 'R_earth', or 'm'.")
         if a_unit == "AU":
             self.a = a * u.au
         elif a_unit == "m":
             self.a = a * u.m
         else:
-            raise("ValueError: a_unit must be either 'AU' or 'm'.")
+            raise Exception("ValueError: a_unit must be either 'AU' or 'm'.")
         #self.mass = mass * u.M_jup
 
 class Star(object):
